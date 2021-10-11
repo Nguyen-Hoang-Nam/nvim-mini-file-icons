@@ -137,8 +137,8 @@ local icons = {
         name = 'NPMIgnore',
     },
     ['.vimrc'] = {
-        icon = '',
-        color = '#66783e',
+        icon = '',
+        color = '#90a959',
         name = 'Vimrc',
     },
     ['.zshrc'] = {
@@ -239,7 +239,7 @@ local icons = {
         name = 'CMakeLists',
     },
     ['cmake'] = {
-        icon = '',
+        icon = '',
         color = '#90a959',
         name = 'CMake',
     },
@@ -710,7 +710,7 @@ local icons = {
     },
 
     ['vim'] = {
-        icon = '',
+        icon = '',
         color = '#90a959',
         name = 'Vim',
     },
@@ -760,13 +760,13 @@ local icons = {
         name = 'Pdf',
     },
     ['kt'] = {
-        icon = '𝙆',
+        icon = '',
         color = '#46788d',
         name = 'Kotlin',
     },
     ['otf'] = {
-        icon = '',
-        color = '#ee9e2e',
+        icon = '',
+        color = '#90a959',
         name = 'OpenTypeFont',
     },
     ['cfg'] = {
