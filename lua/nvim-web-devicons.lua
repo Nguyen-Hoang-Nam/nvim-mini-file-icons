@@ -218,17 +218,17 @@ local icons = {
     },
 
     ["clj"] = {
-        icon = "",
+        icon = "",
         color = "#6a9fb5",
         name = "Clojure",
     },
     ["cljc"] = {
-        icon = "",
+        icon = "",
         color = "#90a959",
         name = "ClojureC",
     },
     ["cljs"] = {
-        icon = "",
+        icon = "",
         color = "#6a9fb5",
         name = "ClojureJS",
     },
