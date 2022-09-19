@@ -793,6 +793,108 @@ local icons = {
     },
 }
 
+local filetypes = {
+    ["COPYING"] = "COPYING",
+    ["Gemfile"] = "Gemfile$",
+    ["LESSER"] = "COPYING.LESSER",
+    ["LICENSE"] = "LICENSE",
+    ["Vagrantfile"] = "Vagrantfile$",
+    ["awk"] = "awk",
+    ["bmp"] = "bmp",
+    ["c"] = "c",
+    ["cfg"] = "cfg",
+    ["clojure"] = "clj",
+    ["cmake"] = "cmake",
+    ["conf"] = "conf",
+    ["cp"] = "cp",
+    ["cpp"] = "cpp",
+    ["cs"] = "cs",
+    ["css"] = "css",
+    ["dart"] = "dart",
+    ["dockerfile"] = "dockerfile",
+    ["dump"] = "dump",
+    ["eex"] = "eex",
+    ["ejs"] = "ejs",
+    ["elixir"] = "ex",
+    ["erlang"] = "erl",
+    ["eruby"] = "erb",
+    ["forth"] = "fs",
+    ["fortran"] = "f#",
+    ["fsi"] = "fsi",
+    ["fsscript"] = "fsscript",
+    ["fsx"] = "fsx",
+    ["gif"] = "gif",
+    ["git"] = "git",
+    ["gitconfig"] = ".gitconfig",
+    ["go"] = "go",
+    ["gruntfile"] = "gruntfile",
+    ["gulpfile"] = "gulpfile",
+    ["haskell"] = "hs",
+    ["hbs"] = "hbs",
+    ["html"] = "html",
+    ["ico"] = "ico",
+    ["idlang"] = "pro",
+    ["java"] = "java",
+    ["javascript"] = "js",
+    ["javascript.jsx"] = "jsx",
+    ["javascriptreact"] = "jsx",
+    ["jpeg"] = "jpeg",
+    ["jpg"] = "jpg",
+    ["json"] = "json",
+    ["julia"] = "jl",
+    ["kotlin"] = "kt",
+    ["leex"] = "leex",
+    ["lhaskell"] = "lhs",
+    ["license"] = "license",
+    ["lua"] = "lua",
+    ["make"] = "makefile",
+    ["markdown"] = "markdown",
+    ["mdx"] = "mdx",
+    ["mustache"] = "mustache",
+    ["nix"] = "nix",
+    ["node"] = "node_modules",
+    ["otf"] = "otf",
+    ["pdf"] = "pdf",
+    ["perl"] = "pl",
+    ["php"] = "php",
+    ["plaintex"] = "tex",
+    ["png"] = "png",
+    ["procfile"] = "Procfile",
+    ["ps1"] = "ps1",
+    ["puppet"] = "pp",
+    ["pyc"] = "pyc",
+    ["pyd"] = "pyd",
+    ["pyo"] = "pyo",
+    ["python"] = "py",
+    ["r"] = "r",
+    ["rlib"] = "rlib",
+    ["rmd"] = "rmd",
+    ["rproj"] = "rproj",
+    ["ruby"] = "rb",
+    ["sass"] = "sass",
+    ["scala"] = "scala",
+    ["scss"] = "scss",
+    ["sh"] = "sh",
+    ["slim"] = "slim",
+    ["sql"] = "sql",
+    ["svelte"] = "svelte",
+    ["svg"] = "svg",
+    ["tads"] = "t",
+    ["terminal"] = "terminal",
+    ["toml"] = "toml",
+    ["twig"] = "twig",
+    ["typescript"] = "ts",
+    ["typescriptreact"] = "tsx",
+    ["vim"] = "vim",
+    ["vue"] = "vue",
+    ["webp"] = "webp",
+    ["webpack"] = "webpack",
+    ["xml"] = "xml",
+    ["yaml"] = "yaml",
+    ["zig"] = "zig",
+    ["zsh"] = "zsh",
+}
+
 local default_icon = {
     icon = "",
     color = "#6d8086",
@@ -811,16 +913,48 @@ end
 local function set_up_highlight(icon_data)
     local hl_group = get_highlight_name(icon_data)
     if hl_group then
-        vim.api.nvim_command("highlight! " .. hl_group .. " guifg=" .. icon_data.color)
+        local highlight_command = "highlight! " .. hl_group
+
+        if icon_data.color then
+            highlight_command = highlight_command .. " guifg=" .. icon_data.color
+        end
+
+        if icon_data.cterm_color then
+            highlight_command = highlight_command .. " ctermfg=" .. icon_data.cterm_color
+        end
+
+        if icon_data.color or icon_data.cterm_color then
+            vim.api.nvim_command(highlight_command)
+        end
     end
+end
+
+local function highlight_exists(group)
+    if not group then
+        return
+    end
+
+    local ok, hl = pcall(vim.api.nvim_get_hl_by_name, group, true)
+    return ok and not (hl or {})[true]
 end
 
 local function set_up_highlights()
     for _, icon_data in pairs(icons) do
-        if icon_data.color and icon_data.name then
+        local has_color = icon_data.color or icon_data.cterm_color
+        local name_valid = icon_data.name and not highlight_exists(get_highlight_name(icon_data))
+        if has_color and name_valid then
             set_up_highlight(icon_data)
         end
     end
+end
+
+local function get_highlight_foreground(icon_data)
+    return string.format("#%06x", vim.api.nvim_get_hl_by_name(get_highlight_name(icon_data), true).foreground)
+end
+
+local function get_highlight_ctermfg(icon_data)
+    local _, _, ctermfg = string.find(vim.fn.execute("highlight " .. get_highlight_name(icon_data)), "ctermfg=(%d+)")
+    return ctermfg
 end
 
 local loaded = false
@@ -868,16 +1002,86 @@ local function get_icon(name, ext, opts)
     end
 end
 
+local function get_icon_name_by_filetype(ft)
+    return filetypes[ft]
+end
+
+local function get_icon_by_filetype(ft, opts)
+    local name = get_icon_name_by_filetype(ft)
+    return get_icon(name or "", nil, opts)
+end
+
+local function get_icon_colors(name, ext, opts)
+    ext = ext or name:match("^.*%.(.*)$") or ""
+    if not loaded then
+        setup()
+    end
+
+    local has_default = (opts and opts.default) or global_opts.default
+    local icon_data = icons[name] or icons[ext] or (has_default and default_icon)
+
+    if icon_data then
+        local color = icon_data.color
+        local cterm_color = icon_data.cterm_color
+        if icon_data.name and highlight_exists(get_highlight_name(icon_data)) then
+            color = get_highlight_foreground(icon_data) or color
+            cterm_color = get_highlight_ctermfg(icon_data) or cterm_color
+        end
+        return icon_data.icon, color, cterm_color
+    end
+end
+
+local function get_icon_colors_by_filetype(ft, opts)
+    local name = get_icon_name_by_filetype(ft)
+    return get_icon_colors(name or "", nil, opts)
+end
+
+local function get_icon_color(name, ext, opts)
+    local data = { get_icon_colors(name, ext, opts) }
+    return data[1], data[2]
+end
+
+local function get_icon_color_by_filetype(ft, opts)
+    local name = get_icon_name_by_filetype(ft)
+    return get_icon_color(name or "", nil, opts)
+end
+
+local function get_icon_cterm_color(name, ext, opts)
+    local data = { get_icon_colors(name, ext, opts) }
+    return data[1], data[3]
+end
+
+local function get_icon_cterm_color_by_filetype(ft, opts)
+    local name = get_icon_name_by_filetype(ft)
+    return get_icon_cterm_color(name or "", nil, opts)
+end
+
 local function set_icon(user_icons)
-    icons = vim.tbl_extend("force", icons, user_icons)
+    icons = vim.tbl_extend("force", icons, user_icons or {})
     for _, icon_data in pairs(user_icons) do
         set_up_highlight(icon_data)
     end
 end
 
+local function set_default_icon(icon, color, cterm_color)
+    default_icon.icon = icon
+    default_icon.color = color
+    default_icon.cterm_color = cterm_color
+    set_up_highlight(default_icon)
+end
+
 return {
     get_icon = get_icon,
+    get_icon_colors = get_icon_colors,
+    get_icon_color = get_icon_color,
+    get_icon_cterm_color = get_icon_cterm_color,
+    get_icon_name_by_filetype = get_icon_name_by_filetype,
+    get_icon_by_filetype = get_icon_by_filetype,
+    get_icon_colors_by_filetype = get_icon_colors_by_filetype,
+    get_icon_color_by_filetype = get_icon_color_by_filetype,
+    get_icon_cterm_color_by_filetype = get_icon_cterm_color_by_filetype,
     set_icon = set_icon,
+    set_default_icon = set_default_icon,
     setup = setup,
     has_loaded = function()
         return loaded
